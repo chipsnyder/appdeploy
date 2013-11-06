@@ -77,7 +77,6 @@ Usage Examples
       get_bundle_id <path_to_app>  : Display bundle identifier of app 
       install <path_to_app>        : Install app to device
       uninstall <bundle_id>        : Uninstall app by bundle id
-      tunnel <from_port> <to_port> : Forward TCP connections to connected device #not yet implemented
       list_apps [-p]               : Lists all installed apps on device
                  -p                : Include installation paths
 
@@ -98,7 +97,7 @@ This will return the bundle id for the specified application.
 
 <b>Parameters:</b>
 <ul>
-<li>< path_to_app >  the path on your machine to the .app file of the compiled application. 
+<li><b>< path_to_app ></b>  the path on your machine to the .app file of the compiled application. 
 </ul>
 
      appdeploy get_bundle_id /Users/me/Projects/Sample.app
@@ -112,7 +111,7 @@ Install your compiled .app to the device
 
 <b>Parameters:</b>
 <ul>
-<li>< path_to_app >  the path on your machine to the .app file of the compiled application. 
+<li><b>< path_to_app ></b>  the path on your machine to the .app file of the compiled application. 
 </ul>
 
     appdeploy install /Users/me/Projects/Sample.app
@@ -126,7 +125,7 @@ Uninstall your app from the device
 
 <b>Parameters:</b>
 <ul>
-<li>< bundle_id >  the bundle id of the application to remove 
+<li><b>< bundle_id ></b>  the bundle id of the application to remove 
 </ul> 
 
     appdeploy uninstall com.apple.Sample
@@ -140,7 +139,7 @@ Lists all applications installed on the device. The list will provide each bundl
 
 <b>Parameters:</b>
 <ul>
-<li>-p  optionally display installed paths
+<li><b>-p</b>  optionally display installed paths
 </ul> 
 
      appdeploy list_apps
@@ -168,5 +167,36 @@ To print out the installation paths for each application include the -p paramete
 	    Path: /private/var/mobile/Applications/XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX/MobileSafari.app
        ...
 
-<h2>Tunnel</h2>
-Not Implemented yet Check back
+<hr>
+Compile Your Project
+================
+Appdeploy relies on having a compiled version of your project. To compile the code from command line you can use Apple's xcodebuild tool.
+
+<b>Parameters:</b>
+<ul>
+<li><b>-project</b>  The path the .xcodeproj file on your machine
+<li><b>-target</b> The 
+</ul> 
+
+    xcodebuild -project /Users/me/Projects/Sample.xcodeproj -target Sample -sdk iphoneos -configuration Debug clean build 
+
+The compiled application will be in the following be at the path (Note ./ represents the location of the folder where the .xcodeproj folder lives)
+     
+    ./build/Debug-iphoneos/Sample.app
+
+You can find more information at: 
+<a href="https://developer.apple.com/library/mac/documentation/Darwin/Reference/Manpages/man1/man.1.html#//apple_ref/doc/man/1/man"> https://developer.apple.com/library/mac/documentation/Darwin/Reference/Manpages/man1/man.1.html#//apple_ref/doc/man/1/man</a>
+
+<hr>
+License
+======
+
+The MIT License (MIT)<br>
+Copyright (c) 2013 Chip Snyder<br><br>
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:<br><br>
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.<br><br>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+<a href="http://opensource.org/licenses/MIT">The MIT License (MIT)</a>
+
+ 
