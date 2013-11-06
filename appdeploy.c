@@ -42,7 +42,6 @@ void print_usage()
     printf("  get_bundle_id <path_to_app>  : Display bundle identifier of app \n");
     printf("  install <path_to_app>        : Install app to device\n");
     printf("  uninstall <bundle_id>        : Uninstall app by bundle id\n");
-    printf("  tunnel <from_port> <to_port> : Forward TCP connections to connected device\n");
     printf("  list_apps [-p]               : Lists all installed apps on device\n");
     printf("             -p                : Include installation paths\n");
     printf("\n");
