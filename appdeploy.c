@@ -117,7 +117,7 @@ void get_udid(struct am_device *device)
     }
     
     // print UDID to console
-    printf("%s\n", udid);
+    printf("%s", udid);
     
     free(udid);
     unregister_device_notification(0);
