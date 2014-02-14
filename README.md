@@ -34,7 +34,7 @@ If setup was successful you will see the following output
       get_bundle_id <path_to_app>  : Display bundle identifier of app 
       install <path_to_app>        : Install app to device
       uninstall <bundle_id>        : Uninstall app by bundle id
-      tunnel <from_port> <to_port> : Forward TCP connections to connected device
+      list_files <bundle_id>       : Lists all of the files in the sandbox for the specified app
       list_apps [-p]               : Lists all installed apps on device
                  -p                : Include installation paths
 
@@ -133,6 +133,23 @@ Uninstall your app from the device
  Your output will look something like
 
     com.apple.Sample successfully uninstalled.
+
+<h2>List Files</h2>
+Lists all files inside the Documents directory of the Application. The List will include the full path to each file.
+
+<b>Parameters:</b>
+<ul>
+<li><b>< bundle_id ></b>  the bundle id of the application to inspect
+</ul> 
+
+    appdeploy list_files com.apple.Sample
+
+ Your output will look something like
+
+ 	Documents/coreDataFile.data
+    Documents/SubFolder/File.jpeg
+    Documents/SubFolder/File1.txt
+    Documents/SubFolder/SubFolder2/File2.pdf
 
 <h2>List Apps</h2>
 Lists all applications installed on the device. The list will provide each bundle id for the installed applications and not the name of the application it's self. You can also list all applications installed on the device including their installed location.   

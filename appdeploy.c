@@ -18,7 +18,8 @@ enum MobileDeviceCommandType
     GetUDID,
     InstallApp,
     UninstallApp,
-    ListApps
+    ListApps,
+    ListFiles
 };
 
 struct
@@ -42,6 +43,7 @@ void print_usage()
     printf("  get_bundle_id <path_to_app>  : Display bundle identifier of app \n");
     printf("  install <path_to_app>        : Install app to device\n");
     printf("  uninstall <bundle_id>        : Uninstall app by bundle id\n");
+    printf("  list_files <bundle_id>       : Lists all of the files in the sandbox for the specified app\n");
     printf("  list_apps [-p]               : Lists all installed apps on device\n");
     printf("             -p                : Include installation paths\n");
     printf("\n");
@@ -104,6 +106,46 @@ void connect_to_device(struct am_device *device)
     ASSERT_OR_EXIT(AMDeviceIsPaired(device), "Error attempting to connect to device: AMDeviceIsPaired failed\n");
     ASSERT_OR_EXIT(!AMDeviceValidatePairing(device), "Error attempting to connect to device: AMDeviceValidatePairing failed\n");
     ASSERT_OR_EXIT(!AMDeviceStartSession(device), "Error attempting to connect to device: AMDeviceStartSession failed\n");
+}
+
+static void print_installed_app(const void *key, const void *value, void *context)
+{
+    if ((key == NULL) || (value == NULL))
+    {
+        return;
+    }
+    
+    char *bundle_id = create_cstr_from_cfstring((CFStringRef)key);
+    
+    if (bundle_id == NULL)
+    {
+        return;
+    }
+    
+    if (command.print_paths)
+    {
+        char *path = NULL;
+        CFStringRef path_value;
+        path_value = CFDictionaryGetValue((CFDictionaryRef)value, CFSTR("Path"));
+        
+        if (path_value != NULL)
+        {
+            path = create_cstr_from_cfstring(path_value);
+        }
+        
+        printf("%s\n\tPath: %s\n", bundle_id, (path == NULL) ? "" : path);
+        
+        if (path != NULL)
+        {
+            free(path);
+        }
+    }
+    else
+    {
+        printf("%s\n", bundle_id);
+    }
+    
+    free(bundle_id);
 }
 
 // Get UDID
@@ -222,46 +264,6 @@ void install_app(struct am_device *device)
 }
 
 // Uninstall App
-static void print_installed_app(const void *key, const void *value, void *context)
-{
-    if ((key == NULL) || (value == NULL))
-    {
-        return;
-    }
-    
-    char *bundle_id = create_cstr_from_cfstring((CFStringRef)key);
-    
-    if (bundle_id == NULL)
-    {
-        return;
-    }
-    
-    if (command.print_paths)
-    {
-        char *path = NULL;
-        CFStringRef path_value;
-        path_value = CFDictionaryGetValue((CFDictionaryRef)value, CFSTR("Path"));
-        
-        if (path_value != NULL)
-        {
-            path = create_cstr_from_cfstring(path_value);
-        }
-        
-        printf("%s\n\tPath: %s\n", bundle_id, (path == NULL) ? "" : path);
-        
-        if (path != NULL)
-        {
-            free(path);
-        }
-    }
-    else
-    {
-        printf("%s\n", bundle_id);
-    }
-    
-    free(bundle_id);
-}
-
 void uninstall_app(struct am_device *device)
 {
     connect_to_device(device);
@@ -290,6 +292,85 @@ void list_apps(struct am_device *device)
     unregister_device_notification(0);
 }
 
+// List Files
+void read_files(struct afc_connection* fileConnection, char* dir)
+{
+    char *dir_ent;
+
+    struct afc_dictionary* fileDictionary;
+    AFCFileInfoOpen(fileConnection, dir, &fileDictionary);
+    
+    struct afc_directory* fileDirectory;
+    afc_error_t err = AFCDirectoryOpen(fileConnection, dir, &fileDirectory);
+    
+    if (err != 0)
+    {
+        printf("%s\n", dir);
+        return;
+    }
+    
+    while(true)
+    {
+        err = AFCDirectoryRead(fileConnection, fileDirectory, &dir_ent);
+        
+        if (!dir_ent)
+        {
+            break;
+        }
+        
+        if (strcmp(dir_ent, ".") == 0 || strcmp(dir_ent, "..") == 0)
+        {
+            continue;
+        }
+        
+        char* dir_joined = malloc(strlen(dir) + strlen(dir_ent) + 2);
+        strcpy(dir_joined, dir);
+        
+        if (dir_joined[strlen(dir)-1] != '/')
+        {
+            strcat(dir_joined, "/");
+        }
+        
+        strcat(dir_joined, dir_ent);
+        read_files(fileConnection, dir_joined);
+        free(dir_joined);
+    }
+    
+    AFCDirectoryClose(fileConnection, fileDirectory);
+}
+
+service_conn_t start_file_service(struct am_device * device)
+{
+    connect_to_device(device);
+    
+    service_conn_t serviceConnection;
+    
+    CFStringRef cf_bundle_id = CFStringCreateWithCString(NULL, command.bundle_id, kCFStringEncodingASCII);
+    if (AMDeviceStartHouseArrestService(device, cf_bundle_id, 0, &serviceConnection, 0) != 0)
+    {
+        printf("Unable to find bundle with id: %s\n", command.bundle_id);
+        exit(1);
+    }
+    
+    ASSERT_OR_EXIT(AMDeviceStopSession(device) == 0, "Error attempting to list files: AMDeviceStopSession failed\n");
+    ASSERT_OR_EXIT(AMDeviceDisconnect(device) == 0, "Error attempting to list files: AMDeviceDisconnect failed\n");
+    CFRelease(cf_bundle_id);
+    
+    return serviceConnection;
+}
+
+
+void list_files(struct am_device *device)
+{
+    service_conn_t serviceConnection = start_file_service(device);
+    
+    struct afc_connection* fileConnection;
+    AFCConnectionOpen(serviceConnection, 0, &fileConnection);
+    
+    read_files(fileConnection, "/Documents");
+    unregister_device_notification(0);
+}
+
 
 // Device Connected
 void on_device_connected(struct am_device *device)
@@ -309,6 +390,10 @@ void on_device_connected(struct am_device *device)
     else if (command.type == ListApps)
     {
         list_apps(device);
+    }
+    else if (command.type == ListFiles)
+    {
+        list_files(device);
     }
 }
 
@@ -365,6 +450,11 @@ int main(int argc, const char * argv[])
             command.print_paths = 0;
         }
         
+    }
+    else if((argc >= 3) && (strcmp(argv[1], "list_files") == 0))
+    {
+        command.type = ListFiles;
+        command.bundle_id = argv[2];
     }
     else
     {

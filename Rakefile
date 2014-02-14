@@ -26,7 +26,7 @@ task :clean do
 end
 
 desc 'Update appdeploy (make sure you get latest from github first)'
-task :update => [:uninstall, :setup]
+task :update => [:compile, :uninstall, :setup]
 
 desc 'Setup appdeploy (make sure you get latest from github first)'
 task :setup => [:compile, :install, :clean]
