@@ -26,17 +26,20 @@ Next run the command
 If setup was successful you will see the following output
 
     Usage: appdeploy <command> [<options>]
-    <path_to_app>                  : Local Path to .app file. ex /Users/me/Documents/CumberTest.app 
-    <bundle_id>                    : Bundle Identification of application example. com.apple.Music 
+    	<path_to_app>                        : Local Path to .app file. ex /Users/me/Documents/CumberTest.app 
+    	<bundle_id>                          : Bundle Identification of application example. com.apple.Music 
+    	<file_path>                          : the path to the file on the device. ex /Documents/File.png 
 
-    Commands:
-      get_udid                     : Display UDID of connected device (will only show the first device discovered) 
-      get_bundle_id <path_to_app>  : Display bundle identifier of app 
-      install <path_to_app>        : Install app to device
-      uninstall <bundle_id>        : Uninstall app by bundle id
-      list_files <bundle_id>       : Lists all of the files in the sandbox for the specified app
-      list_apps [-p]               : Lists all installed apps on device
-                 -p                : Include installation paths
+	Commands:
+  		get_udid                             : Display UDID of connected device (will only show the first device discovered) 
+  		get_bundle_id <path_to_app>          : Display bundle identifier of app 
+  		install <path_to_app>                : Install app to device
+  		uninstall <bundle_id>                : Uninstall app by bundle id
+  		remove_file <bundle_id> <file_path>  : Deletes the specified file at the given path
+  		list_files <bundle_id> [-p]          : Lists all of the files in the sandbox for the specified app
+         	                    -p           : Include all empty folders and paths
+  		list_apps [-p]                       : Lists all installed apps on device
+                   -p                        : Include installation paths
 
 
     
@@ -66,19 +69,20 @@ Usage Examples
 
 <h2>See Help</h2>
 
-    appdeploy
-
     Usage: appdeploy <command> [<options>]
-    <path_to_app>                  : Local Path to .app file. ex /Users/me/Documents/CumberTest.app 
-    <bundle_id>                    : Bundle Identification of application example. com.apple.Music 
+		<path_to_app>                         : Local Path to .app file. ex /Users/me/Documents/CumberTest.app 
+		<bundle_id>                           : Bundle Identification of application example. com.apple.Music 
 
-    Commands:
-      get_udid                     : Display UDID of connected device (will only show the first device discovered) 
-      get_bundle_id <path_to_app>  : Display bundle identifier of app 
-      install <path_to_app>        : Install app to device
-      uninstall <bundle_id>        : Uninstall app by bundle id
-      list_apps [-p]               : Lists all installed apps on device
-                 -p                : Include installation paths
+	Commands:
+  		get_udid                              : Display UDID of connected device (will only show the first device discovered) 
+  		get_bundle_id <path_to_app>           : Display bundle identifier of app 
+  		install <path_to_app>                 : Install app to device
+  		uninstall <bundle_id>                 : Uninstall app by bundle id
+  		remove_file <bundle_id> <file_path>   : Deletes the specified file at the given path
+  		list_files <bundle_id> [-p]           : Lists all of the files in the sandbox for the specified app
+		                        -p            : Include all empty folders and paths
+  		list_apps [-p]                        : Lists all installed apps on device
+        	       -p                         : Include installation paths
 
 <h2>Get UDID</h2>
 
@@ -133,6 +137,23 @@ Uninstall your app from the device
  Your output will look something like
 
     com.apple.Sample successfully uninstalled.
+    
+<h2>Remove File</h2>
+Delete the file or directory from your device. 
+
+<b>-Note:</b> The directory must be empty before it will be removed.
+
+<b>Parameters:</b>
+<ul>
+<li><b>< bundle_id ></b>  the bundle id of the target application
+<li><b>< file_path ></b>  the bundle id of the target application
+</ul> 
+
+    appdeploy remove_file com.apple.Sample /Documents/File.png
+
+ Your output will look something like
+
+    /Documents/File.png successfully deleted.
 
 <h2>List Files</h2>
 Lists all files inside the Documents directory of the Application. The List will include the full path to each file.
@@ -140,9 +161,10 @@ Lists all files inside the Documents directory of the Application. The List will
 <b>Parameters:</b>
 <ul>
 <li><b>< bundle_id ></b>  the bundle id of the application to inspect
+<li><b>-p</b>  optionally display all directories separately
 </ul> 
 
-    appdeploy list_files com.apple.Sample
+    appdeploy list_files com.apple.Sample -p
 
  Your output will look something like
 
@@ -150,6 +172,12 @@ Lists all files inside the Documents directory of the Application. The List will
     Documents/SubFolder/File.jpeg
     Documents/SubFolder/File1.txt
     Documents/SubFolder/SubFolder2/File2.pdf
+    ...
+ 
+ With optional paramater you will also see
+ 
+ 	Documents/SubFolder/SubFolder3
+ 	...
 
 <h2>List Apps</h2>
 Lists all applications installed on the device. The list will provide each bundle id for the installed applications and not the name of the application it's self. You can also list all applications installed on the device including their installed location.   

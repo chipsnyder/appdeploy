@@ -414,8 +414,7 @@ extern "C" {
 	 * Returns:
 	 *      MDERR_OK                if successful
 	 */
-	__DLLIMPORT afc_error_t AFCDirectoryOpen(struct afc_connection *conn, char *path, struct
-								 afc_directory **dir);
+	__DLLIMPORT afc_error_t AFCDirectoryOpen(struct afc_connection *conn, char *path, struct afc_directory **dir);
 	
 	/* Acquires the next entry in a directory previously opened with
 	 * AFCDirectoryOpen(). When dirent is filled with a NULL value, then the end
@@ -426,8 +425,7 @@ extern "C" {
 	 * Returns:
 	 *      MDERR_OK                if successful, even if no entries remain
 	 */
-	__DLLIMPORT afc_error_t AFCDirectoryRead(struct afc_connection *conn, struct afc_directory *dir,
-								 char **dirent);
+	__DLLIMPORT afc_error_t AFCDirectoryRead(struct afc_connection *conn, struct afc_directory *dir, char **dirent);
 	__DLLIMPORT afc_error_t AFCDirectoryClose(struct afc_connection *conn, struct afc_directory *dir);
 	__DLLIMPORT afc_error_t AFCDirectoryCreate(struct afc_connection *conn, char *dirname);
 	__DLLIMPORT afc_error_t AFCRemovePath(struct afc_connection *conn, char *dirname);
