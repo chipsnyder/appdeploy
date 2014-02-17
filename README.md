@@ -56,6 +56,9 @@ If setup was successful you will see the following output
 
     	download_file <bundle_id> <file_path> <destination_path>
         	- Deletes the specified file at the given path
+        	
+       	upload_file <bundle_id> <file_path> <destination_path>
+        	- Upload the specified file at the given path
 
     	list_files <bundle_id> [-verbose]
         	- Lists all of the files in the sandbox for the specified app.
@@ -128,6 +131,9 @@ Your output should look like:
 
     	download_file <bundle_id> <file_path> <destination_path>
         	- Deletes the specified file at the given path
+        	
+    	upload_file <bundle_id> <file_path> <destination_path>
+        	- Upload the specified file at the given path
 
     	list_files <bundle_id> [-verbose]
         	- Lists all of the files in the sandbox for the specified app.
@@ -223,6 +229,22 @@ Download a file from the device to your machine.
  Your output will look something like
 
     /Documents/File.png successfully downloaded to /Users/me/Documents/fileCopy.png.
+    
+<h2>Upload File</h2>
+Upload a file from the device to your machine. 
+
+<b>Parameters:</b>
+<ul>
+<li><b>< bundle_id ></b>  The bundle id of the target application
+<li><b>< file_path ></b>  The path to the file on the device.
+<li><b>< destination_path ></b>  The local path to store the downloaded file.
+</ul> 
+
+    appdeploy upload_file com.apple.Sample /Users/me/Documents/fileCopy.png /Documents/File.png
+
+ Your output will look something like
+
+    /Users/me/Documents/fileCopy.png successfully uploaded to /Documents/File.png
 
 
 <h2>List Files</h2>

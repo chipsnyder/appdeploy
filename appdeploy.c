@@ -64,6 +64,8 @@ void print_usage()
     printf("        - Deletes the specified file at the given path\n\n");
     printf("    download_file <bundle_id> <file_path> <destination_path>\n");
     printf("        - Deletes the specified file at the given path\n\n");
+    printf("    upload_file <bundle_id> <file_path> <destination_path>\n");
+    printf("        - Upload the specified file at the given path\n\n");
     printf("    list_files <bundle_id> [-verbose]\n");
     printf("        - Lists all of the files in the sandbox for the specified app.\n");
     printf("        - Use the optional -verbose paramater to get also list all directories\n\n");
