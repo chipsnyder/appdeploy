@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #define ASSERT_OR_EXIT(_cnd_, ...) do { if(!(_cnd_)) { fprintf(stderr, __VA_ARGS__); unregister_device_notification(1); } } while (0)
 
@@ -23,7 +24,7 @@ enum MobileDeviceCommandType
     ListFiles,
     RemoveFile,
     DownloadFile,
-    UploadFile,
+    UploadFile
 };
 
 struct
@@ -409,7 +410,6 @@ void delete_file(struct am_device *device)
     ASSERT_OR_EXIT(AFCRemovePath(fileConnection, fileDir) == 0, "Error attempting to remove file: AFCRemovePath failed\n");
     ASSERT_OR_EXIT(AFCConnectionClose(fileConnection) == 0, "Error attempting to remove file: AFCConnectionClose failed\n");
     
-    free(fileDir);
     printf("%s successfully removed.\n", command.file_path);
     unregister_device_notification(0);
 }
@@ -451,13 +451,14 @@ void download_file(struct am_device *device)
     
     char* buf = malloc(fsize);
     
-    ASSERT_OR_EXIT(AFCFileRefRead(fileConnection, file_ref, buf, &fsize) == 0, "Error attempting to download file: AFCFileRefClose failed\n");
+    ASSERT_OR_EXIT(AFCFileRefRead(fileConnection, file_ref, buf, &fsize) == 0, "Error attempting to download file: AFCFileRefRead failed\n");
     FILE* pFile = fopen(command.destination_path, "wb");
     
     if (pFile)
     {
         fwrite(buf, fsize, 1, pFile);
     }
+    fclose(pFile);
     
     ASSERT_OR_EXIT(AFCFileRefClose(fileConnection, file_ref) == 0, "Error attempting to download file: AFCFileRefClose failed\n");
     ASSERT_OR_EXIT(AFCConnectionClose(fileConnection) == 0, "Error attempting to download file: AFCConnectionClose failed\n");
@@ -466,6 +467,42 @@ void download_file(struct am_device *device)
     unregister_device_notification(0);
 }
 
+//Upload File
+
+void upload_file(struct am_device *device)
+{
+    service_conn_t serviceConnection = start_file_service(device);
+    struct afc_connection* fileConnection;
+    AFCConnectionOpen(serviceConnection, 0, &fileConnection);
+    
+    char *fileDir = command.file_path;
+    char *target_dir = command.destination_path;
+    afc_file_ref file_ref;
+    
+    struct stat buf;
+    stat(fileDir, &buf);
+    
+    printf("%lld", buf.st_size);
+    unsigned int file_size = buf.st_size;
+    printf("%u", file_size);
+    FILE* pFile = fopen(fileDir, "rb");
+    char* content = malloc(file_size);
+    
+    if (pFile)
+    {
+        fread(content, file_size, 1, pFile);
+    }
+    
+    ASSERT_OR_EXIT(AFCFileRefOpen(fileConnection, target_dir, 3, &file_ref) == 0, "Error attempting to upload file: AFCFileRefOpen failed\n");
+    ASSERT_OR_EXIT(AFCFileRefWrite(fileConnection, file_ref, content, file_size) == 0, "Error attempting to upload file: AFCFileRefWrite failed\n");
+    fclose(pFile);
+    
+    ASSERT_OR_EXIT(AFCFileRefClose(fileConnection, file_ref) == 0, "Error attempting to upload file: AFCFileRefClose failed\n");
+    ASSERT_OR_EXIT(AFCConnectionClose(fileConnection) == 0, "Error attempting to upload file: AFCConnectionClose failed\n");
+    
+    printf("%s successfully upload to %s.\n", command.file_path, command.destination_path);
+    unregister_device_notification(0);
+}
 
 // Device Connected
 void on_device_connected(struct am_device *device)
@@ -498,6 +535,10 @@ void on_device_connected(struct am_device *device)
             
         case DownloadFile:
             download_file(device);
+            break;
+            
+        case UploadFile:
+            upload_file(device);
             break;
             
         default:
@@ -582,6 +623,13 @@ int main(int argc, char * argv[])
     else if((argc >= 5) && (strcmp(argv[1], "download_file") == 0))
     {
         command.type = DownloadFile;
+        command.bundle_id = argv[2];
+        command.file_path = argv[3];
+        command.destination_path = argv[4];
+    }
+    else if((argc >= 5) && (strcmp(argv[1], "upload_file") == 0))
+    {
+        command.type = UploadFile;
         command.bundle_id = argv[2];
         command.file_path = argv[3];
         command.destination_path = argv[4];
