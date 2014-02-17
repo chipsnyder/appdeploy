@@ -7,6 +7,7 @@
 //
 
 #include "mobiledevice.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -20,7 +21,9 @@ enum MobileDeviceCommandType
     UninstallApp,
     ListApps,
     ListFiles,
-    RemoveFile
+    RemoveFile,
+    DownloadFile,
+    UploadFile,
 };
 
 struct
@@ -30,6 +33,7 @@ struct
     char *app_path;
     char *bundle_id;
     char *file_path;
+    char *destination_path;
     int print_paths;
     uint16_t src_port;
     uint16_t dst_port;
@@ -38,21 +42,33 @@ struct
 void print_usage()
 {
     printf("\nUsage: appdeploy <command> [<options>]\n");
-    printf("    <path_to_app>                       : Local Path to .app file. ex /Users/me/Documents/CumberTest.app \n");
-    printf("    <bundle_id>                         : Bundle Identification of application example. com.apple.Music \n");
-    printf("    <file_path>                         : the path to the file on the device. ex /Documents/File.png \n\n");
+    printf("    <path_to_app>\n");
+    printf("        - Local Path to .app file. ex /Users/me/Documents/CumberTest.app \n\n");
+    printf("    <bundle_id>\n");
+    printf("        - Bundle Identification of application. ex com.apple.Music \n\n");
+    printf("    <file_path>\n");
+    printf("        - The path to the file on the device. ex /Documents/File.png \n\n");
+    printf("    <destination_path>\n");
+    printf("        - The local path to store the downloaded file. ex /Users/me/File.png \n\n");
     printf("Commands:\n");
-    printf("  get_udid                              : Display UDID of connected device (will only show the first device discovered) \n");
-    printf("  get_bundle_id <path_to_app>           : Display bundle identifier of app \n");
-    printf("  install <path_to_app>                 : Install app to device\n");
-    printf("  uninstall <bundle_id>                 : Uninstall app by bundle id\n");
-    printf("  remove_file <bundle_id> <file_path>   : Deletes the specified file at the given path\n");
-    printf("  list_files <bundle_id> [-p]           : Lists all of the files in the sandbox for the specified app\n");
-    printf("                          -p            : Include all empty folders and paths\n");
-    printf("  list_apps [-p]                        : Lists all installed apps on device\n");
-    printf("             -p                         : Include installation paths\n");
-    printf("\n");
-    
+    printf("    get_udid\n");
+    printf("        - Display UDID of connected device (will only show the first device discovered) \n\n");
+    printf("    get_bundle_id <path_to_app>\n");
+    printf("        - Display bundle identifier of app \n\n");
+    printf("    install <path_to_app>\n");
+    printf("        - Install app to device\n\n");
+    printf("    uninstall <bundle_id>\n");
+    printf("        - Uninstall app by bundle id\n\n");
+    printf("    remove_file <bundle_id> <file_path>\n");
+    printf("        - Deletes the specified file at the given path\n\n");
+    printf("    download_file <bundle_id> <file_path> <destination_path>\n");
+    printf("        - Deletes the specified file at the given path\n\n");
+    printf("    list_files <bundle_id> [-verbose]\n");
+    printf("        - Lists all of the files in the sandbox for the specified app.\n");
+    printf("        - Use the optional -verbose paramater to get also list all directories\n\n");
+    printf("    list_apps [-paths]\n");
+    printf("        - Lists all installed apps on device\n");
+    printf("        - Use the optional -paths paramater to include all application installation paths\n\n");
 }
 
 // Unregister notifications
@@ -164,7 +180,7 @@ void get_udid(struct am_device *device)
     }
     
     // print UDID to console
-    printf("%s", udid);
+    printf("%s\n", udid);
     
     free(udid);
     unregister_device_notification(0);
@@ -391,8 +407,62 @@ void delete_file(struct am_device *device)
     char *fileDir = command.file_path;
     
     ASSERT_OR_EXIT(AFCRemovePath(fileConnection, fileDir) == 0, "Error attempting to remove file: AFCRemovePath failed\n");
+    ASSERT_OR_EXIT(AFCConnectionClose(fileConnection) == 0, "Error attempting to remove file: AFCConnectionClose failed\n");
     
+    free(fileDir);
     printf("%s successfully removed.\n", command.file_path);
+    unregister_device_notification(0);
+}
+
+//Downlaod File
+
+void download_file(struct am_device *device)
+{
+    service_conn_t serviceConnection = start_file_service(device);
+    struct afc_connection* fileConnection;
+    AFCConnectionOpen(serviceConnection, 0, &fileConnection);
+    
+    char *fileDir = command.file_path;
+    afc_file_ref file_ref;
+    
+    ASSERT_OR_EXIT(AFCFileRefOpen(fileConnection, fileDir, 2, &file_ref) == 0, "Error attempting to download file: AFCFileRefOpen failed\n");
+    
+    struct afc_dictionary* fileDictionary;
+    ASSERT_OR_EXIT(AFCFileInfoOpen(fileConnection, fileDir, &fileDictionary) == 0, "Error attempting to download file: AFCFileInfoOpen failed\n");
+    
+    char *pValue, *pKey;
+    unsigned int fsize = 0;
+    
+    AFCKeyValueRead(fileDictionary, &pKey, &pValue);
+    
+	while(pKey || pValue) {
+		if (pKey == NULL || pValue == NULL)
+        {
+			break;
+        }
+		if (!strcmp(pKey, "st_size"))
+        {
+			fsize = (unsigned int)atoi(pValue);
+			break;
+		}
+		AFCKeyValueRead(fileDictionary, &pKey, &pValue);
+	}
+	AFCKeyValueClose(fileDictionary);
+    
+    char* buf = malloc(fsize);
+    
+    ASSERT_OR_EXIT(AFCFileRefRead(fileConnection, file_ref, buf, &fsize) == 0, "Error attempting to download file: AFCFileRefClose failed\n");
+    FILE* pFile = fopen(command.destination_path, "wb");
+    
+    if (pFile)
+    {
+        fwrite(buf, fsize, 1, pFile);
+    }
+    
+    ASSERT_OR_EXIT(AFCFileRefClose(fileConnection, file_ref) == 0, "Error attempting to download file: AFCFileRefClose failed\n");
+    ASSERT_OR_EXIT(AFCConnectionClose(fileConnection) == 0, "Error attempting to download file: AFCConnectionClose failed\n");
+    
+    printf("%s successfully downloaded to %s.\n", command.file_path, command.destination_path);
     unregister_device_notification(0);
 }
 
@@ -424,6 +494,10 @@ void on_device_connected(struct am_device *device)
             
         case RemoveFile:
             delete_file(device);
+            break;
+            
+        case DownloadFile:
+            download_file(device);
             break;
             
         default:
@@ -475,7 +549,7 @@ int main(int argc, char * argv[])
     {
         command.type = ListApps;
         
-        if ((argc == 3) && (strcmp(argv[2], "-p") == 0))
+        if ((argc == 3) && (strcmp(argv[2], "-paths") == 0))
         {
             command.print_paths = 1;
         }
@@ -490,7 +564,7 @@ int main(int argc, char * argv[])
         command.type = ListFiles;
         command.bundle_id = argv[2];
         
-        if ((argc == 4) && (strcmp(argv[3], "-p") == 0))
+        if ((argc == 4) && (strcmp(argv[3], "-verbose") == 0))
         {
             command.print_paths = 1;
         }
@@ -499,11 +573,18 @@ int main(int argc, char * argv[])
             command.print_paths = 0;
         }
     }
-    else if((argc >= 4) && (strcmp(argv[1], "remove_file") == 0))
+    else if((argc == 4) && (strcmp(argv[1], "remove_file") == 0))
     {
         command.type = RemoveFile;
         command.bundle_id = argv[2];
         command.file_path = argv[3];
+    }
+    else if((argc >= 5) && (strcmp(argv[1], "download_file") == 0))
+    {
+        command.type = DownloadFile;
+        command.bundle_id = argv[2];
+        command.file_path = argv[3];
+        command.destination_path = argv[4];
     }
     else
     {

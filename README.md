@@ -11,8 +11,8 @@ Requirements
 </ul>
 <hr>
 
-Setup
-=====
+Setup and Installation
+======================
 To Setup appdeploy clone the repo to your system
 
     git clone https://github.com/chipsnyder/appdeploy.git
@@ -24,28 +24,51 @@ Next run the command
     appdeploy
 
 If setup was successful you will see the following output
+	
+	Usage: appdeploy <command> [<options>]
+    	<path_to_app>
+        	- Local Path to .app file. ex /Users/me/Documents/CumberTest.app 
 
-    Usage: appdeploy <command> [<options>]
-    	<path_to_app>                        : Local Path to .app file. ex /Users/me/Documents/CumberTest.app 
-    	<bundle_id>                          : Bundle Identification of application example. com.apple.Music 
-    	<file_path>                          : the path to the file on the device. ex /Documents/File.png 
+    	<bundle_id>
+        	- Bundle Identification of application. ex com.apple.Music 
+
+    	<file_path>
+        	- The path to the file on the device. ex /Documents/File.png 
+
+    	<destination_path>
+        	- The local path to store the downloaded file. ex /Users/me/File.png 
 
 	Commands:
-  		get_udid                             : Display UDID of connected device (will only show the first device discovered) 
-  		get_bundle_id <path_to_app>          : Display bundle identifier of app 
-  		install <path_to_app>                : Install app to device
-  		uninstall <bundle_id>                : Uninstall app by bundle id
-  		remove_file <bundle_id> <file_path>  : Deletes the specified file at the given path
-  		list_files <bundle_id> [-p]          : Lists all of the files in the sandbox for the specified app
-         	                    -p           : Include all empty folders and paths
-  		list_apps [-p]                       : Lists all installed apps on device
-                   -p                        : Include installation paths
+    	get_udid
+        	- Display UDID of connected device (will only show the first device discovered) 
 
+    	get_bundle_id <path_to_app>
+        	- Display bundle identifier of app 
+
+    	install <path_to_app>
+        	- Install app to device
+
+    	uninstall <bundle_id>
+        	- Uninstall app by bundle id
+
+    	remove_file <bundle_id> <file_path>
+        	- Deletes the specified file at the given path
+
+    	download_file <bundle_id> <file_path> <destination_path>
+        	- Deletes the specified file at the given path
+
+    	list_files <bundle_id> [-verbose]
+        	- Lists all of the files in the sandbox for the specified app.
+        	- Use the optional -verbose paramater to get also list all directories
+
+    	list_apps [-paths]
+        	- Lists all installed apps on device
+        	- Use the optional -paths paramater to include all application installation paths
 
     
 <hr>
-Partial Install
-==========
+Installation
+============
 Alternatively you can run a partial install by doing any of the following
 
     rake compile # compiles the source code. 
@@ -58,31 +81,61 @@ To expose the compiled code the rest of the system preform the following command
 
 <hr>
 Uninstall
-=======
+=========
 To remove appdeploy from your system
 
     rake uninstall
 
 <hr>
 Usage Examples
-=============
+==============
 
 <h2>See Help</h2>
+To see the help simply run
+	
+	appdeploy
+	
+Your output should look like:
 
     Usage: appdeploy <command> [<options>]
-		<path_to_app>                         : Local Path to .app file. ex /Users/me/Documents/CumberTest.app 
-		<bundle_id>                           : Bundle Identification of application example. com.apple.Music 
+    	<path_to_app>
+        	- Local Path to .app file. ex /Users/me/Documents/CumberTest.app 
+
+    	<bundle_id>
+        	- Bundle Identification of application. ex com.apple.Music 
+
+    	<file_path>
+        	- The path to the file on the device. ex /Documents/File.png 
+
+    	<destination_path>
+        	- The local path to store the downloaded file. ex /Users/me/File.png 
 
 	Commands:
-  		get_udid                              : Display UDID of connected device (will only show the first device discovered) 
-  		get_bundle_id <path_to_app>           : Display bundle identifier of app 
-  		install <path_to_app>                 : Install app to device
-  		uninstall <bundle_id>                 : Uninstall app by bundle id
-  		remove_file <bundle_id> <file_path>   : Deletes the specified file at the given path
-  		list_files <bundle_id> [-p]           : Lists all of the files in the sandbox for the specified app
-		                        -p            : Include all empty folders and paths
-  		list_apps [-p]                        : Lists all installed apps on device
-        	       -p                         : Include installation paths
+    	get_udid
+        	- Display UDID of connected device (will only show the first device discovered) 
+
+    	get_bundle_id <path_to_app>
+        	- Display bundle identifier of app 
+
+    	install <path_to_app>
+        	- Install app to device
+
+    	uninstall <bundle_id>
+        	- Uninstall app by bundle id
+
+    	remove_file <bundle_id> <file_path>
+        	- Deletes the specified file at the given path
+
+    	download_file <bundle_id> <file_path> <destination_path>
+        	- Deletes the specified file at the given path
+
+    	list_files <bundle_id> [-verbose]
+        	- Lists all of the files in the sandbox for the specified app.
+        	- Use the optional -verbose paramater to get also list all directories
+
+    	list_apps [-paths]
+        	- Lists all installed apps on device
+        	- Use the optional -paths paramater to include all application installation paths
 
 <h2>Get UDID</h2>
 
@@ -145,8 +198,8 @@ Delete the file or directory from your device.
 
 <b>Parameters:</b>
 <ul>
-<li><b>< bundle_id ></b>  the bundle id of the target application
-<li><b>< file_path ></b>  the bundle id of the target application
+<li><b>< bundle_id ></b>  The bundle id of the target application
+<li><b>< file_path ></b>  The path to the file on the device.
 </ul> 
 
     appdeploy remove_file com.apple.Sample /Documents/File.png
@@ -155,28 +208,45 @@ Delete the file or directory from your device.
 
     /Documents/File.png successfully deleted.
 
+<h2>Download File</h2>
+Download a file from the device to your machine. 
+
+<b>Parameters:</b>
+<ul>
+<li><b>< bundle_id ></b>  The bundle id of the target application
+<li><b>< file_path ></b>  The path to the file on the device.
+<li><b>< destination_path ></b>  The local path to store the downloaded file.
+</ul> 
+
+    appdeploy download_file com.apple.Sample /Documents/File.png /Users/me/Documents/fileCopy.png
+
+ Your output will look something like
+
+    /Documents/File.png successfully downloaded to /Users/me/Documents/fileCopy.png.
+
+
 <h2>List Files</h2>
 Lists all files inside the Documents directory of the Application. The List will include the full path to each file.
 
 <b>Parameters:</b>
 <ul>
 <li><b>< bundle_id ></b>  the bundle id of the application to inspect
-<li><b>-p</b>  optionally display all directories separately
+<li><b>-verbose</b>  optionally display all directories separately
 </ul> 
 
-    appdeploy list_files com.apple.Sample -p
+    appdeploy list_files com.apple.Sample -verbose
 
  Your output will look something like
 
- 	Documents/coreDataFile.data
-    Documents/SubFolder/File.jpeg
-    Documents/SubFolder/File1.txt
-    Documents/SubFolder/SubFolder2/File2.pdf
+ 	/Documents/coreDataFile.data
+    /Documents/SubFolder/File.jpeg
+    /Documents/SubFolder/File1.txt
+    /Documents/SubFolder/SubFolder2/File2.pdf
     ...
  
  With optional paramater you will also see
  
- 	Documents/SubFolder/SubFolder3
+ 	/Documents/SubFolder/SubFolder3
  	...
 
 <h2>List Apps</h2>
@@ -184,7 +254,7 @@ Lists all applications installed on the device. The list will provide each bundl
 
 <b>Parameters:</b>
 <ul>
-<li><b>-p</b>  optionally display installed paths
+<li><b>-paths</b>  optionally display installed paths
 </ul> 
 
      appdeploy list_apps
@@ -198,7 +268,7 @@ Lists all applications installed on the device. The list will provide each bundl
     ...
 To print out the installation paths for each application include the -p parameter
       
-    appdeploy list_apps -p
+    appdeploy list_apps -paths
     
  Your output will look something like
     
