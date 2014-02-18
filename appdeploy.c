@@ -31,6 +31,7 @@ struct
 {
     struct am_device_notification *notification;
     enum MobileDeviceCommandType type;
+    char *target;
     char *app_path;
     char *bundle_id;
     char *file_path;
@@ -43,35 +44,39 @@ struct
 void print_usage()
 {
     printf("\nUsage: appdeploy <command> [<options>]\n");
-    printf("    <path_to_app>\n");
+    printf("    -p <path_to_app>\n");
     printf("        - Local Path to .app file. ex /Users/me/Documents/CumberTest.app \n\n");
-    printf("    <bundle_id>\n");
+    printf("    -b <bundle_id>\n");
     printf("        - Bundle Identification of application. ex com.apple.Music \n\n");
-    printf("    <file_path>\n");
+    printf("    -f <file_path>\n");
     printf("        - The path to the file on the device. ex /Documents/File.png \n\n");
-    printf("    <destination_path>\n");
+    printf("    -dest <destination_path>\n");
     printf("        - The local path to store the downloaded file. ex /Users/me/File.png \n\n");
+    printf("    -t <target_device>\n");
+    printf("        - The device to target with the selected action. Will install to the first device found if not specified\n\n");
+    printf("    -v (verbose)\n");
+    printf("        - Enables the verbose output where available.\n\n");
     printf("Commands:\n");
     printf("    get_udid\n");
     printf("        - Display UDID of connected device (will only show the first device discovered) \n\n");
     printf("    get_bundle_id <path_to_app>\n");
     printf("        - Display bundle identifier of app \n\n");
-    printf("    install <path_to_app>\n");
+    printf("    install -p <path_to_app> [-t <target_device>]\n");
     printf("        - Install app to device\n\n");
-    printf("    uninstall <bundle_id>\n");
+    printf("    uninstall -b <bundle_id> [-t <target_device>]\n");
     printf("        - Uninstall app by bundle id\n\n");
-    printf("    remove_file <bundle_id> <file_path>\n");
+    printf("    remove_file -b <bundle_id> -f <file_path> [-t <target_device>]\n");
     printf("        - Deletes the specified file at the given path\n\n");
-    printf("    download_file <bundle_id> <file_path> <destination_path>\n");
+    printf("    download_file -b <bundle_id> -f <file_path> -dest <destination_path> [-t <target_device>]\n");
     printf("        - Deletes the specified file at the given path\n\n");
-    printf("    upload_file <bundle_id> <file_path> <destination_path>\n");
+    printf("    upload_file -b <bundle_id> -f <file_path> -dest <destination_path> [-t <target_device>]\n");
     printf("        - Upload the specified file at the given path\n\n");
-    printf("    list_files <bundle_id> [-verbose]\n");
+    printf("    list_files -b <bundle_id> [-v] [-t <target_device>]\n");
     printf("        - Lists all of the files in the sandbox for the specified app.\n");
-    printf("        - Use the optional -verbose paramater to get also list all directories\n\n");
-    printf("    list_apps [-paths]\n");
+    printf("        - Use the optional -v paramater to get also list all directories\n\n");
+    printf("    list_apps [-v] [-t <target_device>]\n");
     printf("        - Lists all installed apps on device\n");
-    printf("        - Use the optional -paths paramater to include all application installation paths\n\n");
+    printf("        - Use the optional -v paramater to include all application installation paths\n\n");
 }
 
 // Unregister notifications
@@ -186,7 +191,6 @@ void get_udid(struct am_device *device)
     printf("%s\n", udid);
     
     free(udid);
-    unregister_device_notification(0);
 }
 
 // Get Bundle ID
@@ -284,7 +288,6 @@ void install_app(struct am_device *device)
     CFRelease(local_app_url);
     
     printf("%s successfully installed.\n", command.app_path);
-    unregister_device_notification(0);
 }
 
 // Uninstall App
@@ -299,7 +302,6 @@ void uninstall_app(struct am_device *device)
     CFRelease(bundle_id);
     
     printf("%s successfully uninstalled.\n", command.bundle_id);
-    unregister_device_notification(0);
 }
 
 // List Apps
@@ -312,8 +314,6 @@ void list_apps(struct am_device *device)
     
     CFDictionaryApplyFunction(apps, print_installed_app, NULL);
     CFRelease(apps);
-    
-    unregister_device_notification(0);
 }
 
 // List Files
@@ -396,7 +396,6 @@ void list_files(struct am_device *device)
     AFCConnectionOpen(serviceConnection, 0, &fileConnection);
     
     read_files(fileConnection, "/Documents");
-    unregister_device_notification(0);
 }
 
 //Remove File
@@ -413,7 +412,6 @@ void delete_file(struct am_device *device)
     ASSERT_OR_EXIT(AFCConnectionClose(fileConnection) == 0, "Error attempting to remove file: AFCConnectionClose failed\n");
     
     printf("%s successfully removed.\n", command.file_path);
-    unregister_device_notification(0);
 }
 
 //Downlaod File
@@ -437,7 +435,8 @@ void download_file(struct am_device *device)
     
     AFCKeyValueRead(fileDictionary, &pKey, &pValue);
     
-	while(pKey || pValue) {
+	while(pKey || pValue)
+    {
 		if (pKey == NULL || pValue == NULL)
         {
 			break;
@@ -466,7 +465,6 @@ void download_file(struct am_device *device)
     ASSERT_OR_EXIT(AFCConnectionClose(fileConnection) == 0, "Error attempting to download file: AFCConnectionClose failed\n");
     
     printf("%s successfully downloaded to %s.\n", command.file_path, command.destination_path);
-    unregister_device_notification(0);
 }
 
 //Upload File
@@ -503,10 +501,10 @@ void upload_file(struct am_device *device)
     ASSERT_OR_EXIT(AFCConnectionClose(fileConnection) == 0, "Error attempting to upload file: AFCConnectionClose failed\n");
     
     printf("%s successfully upload to %s.\n", command.file_path, command.destination_path);
-    unregister_device_notification(0);
 }
 
 // Device Connected
+
 void on_device_connected(struct am_device *device)
 {
     switch (command.type)
@@ -546,6 +544,25 @@ void on_device_connected(struct am_device *device)
         default:
             break;
     }
+    
+    unregister_device_notification(0);
+}
+
+void confirm_udid(struct am_device *device)
+{
+    if (command.target)
+    {
+        char *udid = create_cstr_from_cfstring(AMDeviceCopyDeviceIdentifier(device));
+        
+        if (strcmp(command.target, udid) == 0)
+        {
+            on_device_connected(device);
+        }
+    }
+    else
+    {
+        on_device_connected(device);
+    }
 }
 
 void on_device_notification(struct am_device_notification_callback_info *info, int cookie)
@@ -553,7 +570,7 @@ void on_device_notification(struct am_device_notification_callback_info *info, i
     switch (info->msg)
     {
         case ADNCI_MSG_CONNECTED:
-            on_device_connected(info->dev);
+            confirm_udid(info->dev);
             break;
             
         default:
@@ -567,74 +584,82 @@ void register_device_notification()
     CFRunLoopRun();
 }
 
+void process_args(int argc, char * params[])
+{
+    int i;
+    
+    for (i = 0; i < argc; i++)
+    {
+        if (strcmp(params[i], "-p") == 0)
+        {
+            command.app_path = params[i+1];
+        }
+        else if (strcmp(params[i], "-b") == 0)
+        {
+            command.bundle_id = params[i+1];
+        }
+        else if (strcmp(params[i], "-f") == 0)
+        {
+            command.file_path = params[i+1];
+        }
+        else if (strcmp(params[i], "-dest") == 0)
+        {
+            command.destination_path = params[i+1];
+        }
+        else if (strcmp(params[i], "-t") == 0)
+        {
+            command.target = params[i+1];
+        }
+        else if (strcmp(params[i], "-v") == 0)
+        {
+            command.print_paths = 1;
+        }
+    }
+}
+
 // Main Run Loop
 int main(int argc, char * argv[])
 {
-    if ((argc == 2) && (strcmp(argv[1], "get_udid") == 0))
+    command.print_paths = 0;
+    
+    process_args(argc, argv);
+    
+    if (argc >= 2 && strcmp(argv[1], "get_udid") == 0)
     {
         command.type = GetUDID;
     }
-    else if ((argc == 3) && (strcmp(argv[1], "get_bundle_id") == 0))
+    else if (argc >= 2 && strcmp(argv[1], "get_bundle_id") == 0)
     {
-        get_bundle_id(argv[2]);
+        get_bundle_id(command.app_path);
+        exit(1);
     }
-    else if ((argc == 3) && (strcmp(argv[1], "install") == 0))
+    else if (argc >= 2 && strcmp(argv[1], "install") == 0)
     {
         command.type = InstallApp;
-        command.app_path = argv[2];
     }
-    else if((argc == 3) && (strcmp(argv[1], "uninstall") == 0))
+    else if(argc >= 2 && strcmp(argv[1], "uninstall") == 0)
     {
         command.type = UninstallApp;
-        command.bundle_id = argv[2];
     }
-    else if((argc >= 2) && (strcmp(argv[1], "list_apps") == 0))
+    else if(argc >= 2 && strcmp(argv[1], "list_apps") == 0)
     {
         command.type = ListApps;
-        
-        if ((argc == 3) && (strcmp(argv[2], "-paths") == 0))
-        {
-            command.print_paths = 1;
-        }
-        else
-        {
-            command.print_paths = 0;
-        }
-        
     }
-    else if((argc >= 3) && (strcmp(argv[1], "list_files") == 0))
+    else if(argc >= 2 && strcmp(argv[1], "list_files") == 0)
     {
         command.type = ListFiles;
-        command.bundle_id = argv[2];
-        
-        if ((argc == 4) && (strcmp(argv[3], "-verbose") == 0))
-        {
-            command.print_paths = 1;
-        }
-        else
-        {
-            command.print_paths = 0;
-        }
     }
-    else if((argc == 4) && (strcmp(argv[1], "remove_file") == 0))
+    else if(argc >= 2 && strcmp(argv[1], "remove_file") == 0)
     {
         command.type = RemoveFile;
-        command.bundle_id = argv[2];
-        command.file_path = argv[3];
     }
-    else if((argc >= 5) && (strcmp(argv[1], "download_file") == 0))
+    else if(argc >= 2 && strcmp(argv[1], "download_file") == 0)
     {
         command.type = DownloadFile;
-        command.bundle_id = argv[2];
-        command.file_path = argv[3];
-        command.destination_path = argv[4];
     }
-    else if((argc >= 5) && (strcmp(argv[1], "upload_file") == 0))
+    else if(argc >= 2 && strcmp(argv[1], "upload_file") == 0)
     {
         command.type = UploadFile;
-        command.bundle_id = argv[2];
-        command.file_path = argv[3];
-        command.destination_path = argv[4];
     }
     else
     {
