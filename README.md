@@ -16,6 +16,11 @@ Setup and Installation
 To Setup appdeploy clone the repo to your system
 
     git clone https://github.com/chipsnyder/appdeploy.git
+    
+Navigate into your new app deploy folder
+	
+	cd ./appdeploy
+	
 Then run the Setup rake command.
 
     rake setup
